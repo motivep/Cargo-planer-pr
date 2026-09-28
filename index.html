@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cargo Planner PRO 2.0</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<style>
+:root{--blue:#2563eb;--dark:#0f172a;--panel:#fff;--bg:#eef2f7;--line:#d8e0ea;--muted:#64748b}
+*{box-sizing:border-box}body{margin:0;height:100vh;overflow:hidden;font-family:Segoe UI,Arial,sans-serif;background:var(--bg);color:#172033}
+button,input,select{font:inherit}button{cursor:pointer;border:0;border-radius:7px;font-weight:700;padding:10px 12px}
+.app{display:flex;height:100vh}.side{width:430px;min-width:430px;background:var(--panel);border-right:1px solid var(--line);overflow:auto;padding:17px;box-shadow:3px 0 18px #00000012;z-index:10}
+h1{font-size:21px;margin:0}.sub{color:var(--muted);font-size:12px;margin:4px 0 17px}.section{border-top:2px solid var(--blue);padding-top:9px;margin-top:18px}
+h2{font-size:14px;margin:0 0 10px}.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:7px}.field{margin-bottom:8px}label{display:block;color:var(--muted);font-size:11px;font-weight:700;margin-bottom:3px}
+input,select{width:100%;height:35px;border:1px solid #cbd5e1;border-radius:6px;padding:6px 8px;background:#fff}input:focus,select:focus{outline:2px solid #bfdbfe;border-color:var(--blue)}
+.check{display:flex;gap:7px;align-items:center;margin:8px 0;font-size:12px;font-weight:600}.check input{width:17px;height:17px}
+.btnblue{background:var(--blue);color:#fff;width:100%;font-size:14px}.btngreen{background:#10b981;color:#fff}.btnorange{background:#f59e0b;color:#fff}.btngray{background:#e2e8f0;color:#172033}.btnred{background:#ef4444;color:#fff}
+.item{border:1px solid var(--line);border-radius:8px;padding:9px;margin:7px 0;background:#fafcff}.itemhead{display:flex;justify-content:space-between;align-items:center}.dot{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:6px;vertical-align:-1px}.small{font-size:11px;color:var(--muted);margin-top:4px}
+.item button{padding:4px 7px;font-size:11px}.actions{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:8px}.actions .wide{grid-column:1/-1}
+#view{position:relative;flex:1;background:var(--dark)}#hud{position:absolute;right:16px;top:16px;z-index:3;background:#0f172ae8;color:#fff;padding:13px 15px;border-radius:9px;min-width:260px;box-shadow:0 6px 22px #0005}
+.stat{display:flex;justify-content:space-between;gap:25px;font-size:12px;margin:5px 0}.stat b{color:#cbd5e1}.stat span{font-weight:800}
+#views{position:absolute;left:15px;bottom:15px;z-index:3;display:flex;gap:6px;flex-wrap:wrap}#views button{background:#0f172ae8;color:#fff;border:1px solid #475569;padding:8px 10px}
+#msg{font-size:11px;margin-top:8px;padding:8px;border-radius:6px;display:none}.ok{display:block!important;background:#dcfce7;color:#166534}.bad{display:block!important;background:#fee2e2;color:#991b1b}
+@media(max-width:850px){body{overflow:auto}.app{display:flex;flex-direction:column;height:auto;min-height:100vh}.side{width:100%;min-width:0;height:auto;max-height:none;padding:12px;order:1}.#view{width:100%;height:52vh;min-height:420px;order:2;position:relative}.grid3{grid-template-columns:1fr 1fr}.actions{grid-template-columns:1fr 1fr}.actions button{min-height:44px}.item button{min-height:38px}.section{margin-top:14px}}
+
+#selectedInfo{padding:7px 0;font-weight:700}
+@media(max-width:850px){.actions{grid-template-columns:1fr 1fr}.actions .wide{grid-column:1/-1}}
+</style>
+</head>
+<body>
+<div class="app">
+<aside class="side">
+<h1>🚚 Cargo Planner PRO</h1><div class="sub">Profesionální 3D plánování nákladu • PRO 2.0</div>
+
+<div class="section"><h2>🚛 Nákladový prostor</h2>
+<div class="grid3">
+<div class="field"><label>Délka X (cm)</label><input id="tL" type="number" value="770"></div>
+<div class="field"><label>Šířka Y (cm)</label><input id="tW" type="number" value="248"></div>
+<div class="field"><label>Výška Z (cm)</label><input id="tH" type="number" value="300"></div>
+</div>
+<div class="grid2">
+<div class="field"><label>Max. hmotnost (kg)</label><input id="maxWeight" type="number" value="24000"></div>
+<div class="field"><label>Max. výška nákladu</label><input id="maxLoadH" type="number" value="300"></div>
+</div>
+<div class="check"><input id="rotation" type="checkbox" checked><label for="rotation">Povolit otáčení nákladu</label></div>
+<div class="check"><input id="stack" type="checkbox"><label for="stack">Povolit stohování</label></div>
+<div class="check"><input id="grid" type="checkbox" checked><label for="grid">Podlahová mřížka</label></div>
+</div>
+
+
+<div class="section"><h2>⚖️ Nápravy a těžiště</h2>
+<div class="grid2">
+<div class="field"><label>Přední náprava X (cm)</label><input id="axFront" type="number" value="120"></div>
+<div class="field"><label>Zadní náprava X (cm)</label><input id="axRear" type="number" value="650"></div>
+<div class="field"><label>Limit přední nápravy (kg)</label><input id="axFrontMax" type="number" value="7500"></div>
+<div class="field"><label>Limit zadní nápravy (kg)</label><input id="axRearMax" type="number" value="11500"></div>
+</div>
+<div class="small">Model je orientační dvoubodový výpočet. Pro skutečné vozidlo nastav přesné hodnoty podle technického průkazu a výrobce.</div>
+</div>
+<div class="section"><h2>📦 Přidat druh nákladu</h2>
+<div class="field"><label>Název nákladu</label><input id="name" value="Euro paleta"></div>
+<div class="grid3">
+<div class="field"><label>Délka</label><input id="l" type="number" value="120"></div>
+<div class="field"><label>Šířka</label><input id="w" type="number" value="80"></div>
+<div class="field"><label>Výška</label><input id="h" type="number" value="160"></div>
+</div>
+<div class="grid2">
+<div class="field"><label>Počet ks</label><input id="qty" type="number" value="19"></div>
+<div class="field"><label>Hmotnost / ks (kg)</label><input id="weight" type="number" value="500"></div>
+</div>
+<div class="field"><label>Barva</label><input id="color" type="color" value="#3b82f6"></div>
+<button class="btngreen" style="width:100%" onclick="addType()">＋ Přidat do nákladu</button>
+</div>
+
+<div class="section"><h2>📋 Nákladový seznam</h2><div id="items"></div></div>
+<div class="actions">
+<button class="btnblue wide" onclick="calculate()">⚡ OPTIMALIZOVAT NÁKLAD</button>
+<button class="btngray" onclick="clearPlan()">Vymazat plán</button>
+<button class="btnorange" onclick="exportJSON()">💾 Export JSON</button><button class="btngray" onclick="moveSelected(-20)">◀ Posunout −20</button><button class="btngray" onclick="moveSelected(20)">Posunout +20 ▶</button>
+<button class="btngray" onclick="printReport()">🖨️ Report</button>
+<button class="btngray wide" onclick="saveLocal()">💿 Uložit do zařízení</button>
+</div>
+<div id="msg"></div><div id="selectedInfo" class="small"></div>
+</aside>
+
+<main id="view">
+<div id="hud">
+<div class="stat"><b>Stav</b><span id="status">Připraveno</span></div>
+<div class="stat"><b>Naloženo</b><span id="count">0 / 0</span></div>
+<div class="stat"><b>Hmotnost</b><span id="mass">0 kg</span></div>
+<div class="stat"><b>Využití objemu</b><span id="vol">0 %</span></div>
+<div class="stat"><b>Těžiště X</b><span id="cgx">–</span></div>
+<div class="stat"><b>Těžiště Y</b><span id="cgy">–</span></div>
+<div class="stat"><b>Max. výška</b><span id="maxh">0 cm</span></div><div class="stat"><b>Přední náprava</b><span id="frontAx">–</span></div><div class="stat"><b>Zadní náprava</b><span id="rearAx">–</span></div>
+</div>
+<div id="views">
+<button onclick="cameraTop()">⬇ Shora</button><button onclick="cameraFront()">⬆ Čelo</button><button onclick="cameraSide()">➡ Bok</button><button onclick="camera3D()">🔄 3D</button>
+</div>
+</main>
+</div>
+
+<script>
+let types=[],placed=[],scene,camera,renderer,controls,cargo,truckGroup,gridHelper,selected=null;
+let truck={L:770,W:248,H:300,maxWeight:24000};
+
+function init(){
+ const v=document.getElementById('view');scene=new THREE.Scene();scene.background=new THREE.Color(0x0b1220);
+ camera=new THREE.PerspectiveCamera(45,v.clientWidth/v.clientHeight,1,15000);camera.position.set(1100,800,1200);
+ renderer=new THREE.WebGLRenderer({antialias:true});renderer.setPixelRatio(devicePixelRatio);renderer.setSize(v.clientWidth,v.clientHeight);renderer.shadowMap.enabled=true;v.appendChild(renderer.domElement);
+ controls=new THREE.OrbitControls(camera,renderer.domElement);controls.enableDamping=true;
+ scene.add(new THREE.HemisphereLight(0xffffff,0x334155,.9));
+ let dl=new THREE.DirectionalLight(0xffffff,1);dl.position.set(500,1200,700);dl.castShadow=true;scene.add(dl);
+ cargo=new THREE.Group();scene.add(cargo);drawTruck();addType();animate();
+ window.addEventListener('resize',resize);
+ renderer.domElement.addEventListener('pointerdown',pick);
+}
+function animate(){requestAnimationFrame(animate);controls.update();renderer.render(scene,camera)}
+function resize(){let v=document.getElementById('view');camera.aspect=v.clientWidth/v.clientHeight;camera.updateProjectionMatrix();renderer.setSize(v.clientWidth,v.clientHeight)}
+function readTruck(){truck={L:+t('tL'),W:+t('tW'),H:+t('tH'),maxWeight:+t('maxWeight')}}
+function t(id){return document.getElementById(id).value}
+function drawTruck(){
+ if(truckGroup)scene.remove(truckGroup);truckGroup=new THREE.Group();
+ let g=new THREE.BoxGeometry(truck.L,truck.H,truck.W),e=new THREE.EdgesGeometry(g);
+ let line=new THREE.LineSegments(e,new THREE.LineBasicMaterial({color:0x64748b}));line.position.set(truck.L/2,truck.H/2,truck.W/2);truckGroup.add(line);
+ let floor=new THREE.Mesh(new THREE.BoxGeometry(truck.L,4,truck.W),new THREE.MeshLambertMaterial({color:0x26364d,transparent:true,opacity:.95}));floor.position.set(truck.L/2,0,truck.W/2);truckGroup.add(floor);
+ gridHelper=new THREE.GridHelper(Math.max(truck.L,truck.W),Math.round(Math.max(truck.L,truck.W)/20),0x526174,0x334155);gridHelper.position.set(truck.L/2,3,truck.W/2);truckGroup.add(gridHelper);
+ scene.add(truckGroup);controls.target.set(truck.L/2,truck.H/2,truck.W/2);
+}
+function addType(){
+ let o={id:Date.now()+Math.random(),name:t('name').trim(),L:+t('l'),W:+t('w'),H:+t('h'),qty:+t('qty'),weight:+t('weight'),color:t('color')};
+ if(!o.name||o.L<=0||o.W<=0||o.H<=0||o.qty<=0||o.weight<0)return alert('Zkontroluj zadané hodnoty.');
+ types.push(o);renderTypes();
+}
+function renderTypes(){
+ let box=document.getElementById('items');box.innerHTML='';
+ types.forEach((x,i)=>{let d=document.createElement('div');d.className='item';d.innerHTML=`<div class="itemhead"><b><span class="dot" style="background:${x.color}"></span>${esc(x.name)}</b><button class="btnred" onclick="removeType(${i})">×</button></div><div class="small">${x.qty} ks • ${x.L}×${x.W}×${x.H} cm • ${x.weight} kg/ks</div>`;box.appendChild(d)})
+}
+function removeType(i){types.splice(i,1);renderTypes()}
+function clearPlan(){
+ while(cargo.children.length)cargo.remove(cargo.children[0]);placed=[];selected=null;
+ ['count','mass','vol','cgx','cgy','maxh'].forEach(id=>document.getElementById(id).textContent=id==='count'?'0 / 0':id==='vol'?'0 %':id==='mass'?'0 kg':id==='cgx'||id==='cgy'?'–':'0 cm');
+ document.getElementById('status').textContent='Připraveno';message('');
+}
+function calculate(){
+ clearPlan();readTruck();drawTruck();gridHelper.visible=document.getElementById('grid').checked;
+ let all=[];types.forEach(x=>{for(let n=1;n<=x.qty;n++)all.push({...x,n})});
+ let allowRot=document.getElementById('rotation').checked,allowStack=document.getElementById('stack').checked;
+ // těžší a větší kusy nejdřív
+ all.sort((a,b)=>(b.weight-a.weight)||(b.L*b.W*b.H-a.L*a.W*a.H));
+ let spaces=[{x:0,y:0,z:0,L:truck.L,W:truck.W,H:Math.min(truck.H,+t('maxLoadH'))}];
+ let totalMass=0,totalVol=0,maxH=0;
+ for(const item of all){
+   if(totalMass+item.weight>truck.maxWeight) continue;
+   let pos=findPosition(item,spaces,allowRot,allowStack);
+   if(!pos)continue;
+   let mesh=makeBox(item,pos);cargo.add(mesh);
+   placed.push({...item,...pos,mesh});
+   totalMass+=item.weight;totalVol+=item.L*item.W*item.H;maxH=Math.max(maxH,pos.y+pos.H);
+   spaces=split(spaces,pos);
+ }
+ let cgx=0,cgy=0,ws=0;placed.forEach(p=>{cgx+=(p.x+p.L/2)*p.weight;cgy+=(p.z+p.W/2)*p.weight;ws+=p.weight});
+ if(ws){cgx/=ws;cgy/=ws}
+ let axle=axleLoads(ws,cgx);
+ let total=all.length,volP=totalVol/(truck.L*truck.W*truck.H)*100;
+ document.getElementById('status').textContent=placed.length===total?'Vše naloženo':`Nenaloženo ${total-placed.length}`;
+ document.getElementById('count').textContent=`${placed.length} / ${total}`;
+ document.getElementById('mass').textContent=fmt(totalMass)+' kg';
+ document.getElementById('vol').textContent=volP.toFixed(1)+' %';
+ document.getElementById('cgx').textContent=cgx.toFixed(0)+' cm';
+ document.getElementById('cgy').textContent=cgy.toFixed(0)+' cm';
+ document.getElementById('maxh').textContent=maxH.toFixed(0)+' cm';
+ message(placed.length===total && !axle.bad?'✓ Náklad byl umístěn a nápravové zatížení je v limitech.':axle.bad?'⚠ Náklad je umístěn, ale nápravové zatížení překračuje nastavený limit.':`⚠ Nepodařilo se umístit ${total-placed.length} ks.`,placed.length===total && !axle.bad); updateSelectedInfo();
+}
+function findPosition(it,spaces,rot,stack){
+ let cs=[];for(let i=0;i<spaces.length;i++){let s=spaces[i];let arr=[[it.L,it.W],[it.W,it.L]];if(!rot)arr=[[it.L,it.W]];
+ for(const [L,W] of arr){if(L<=s.L&&W<=s.W&&it.H<=s.H&&(stack||s.y===0))cs.push({s,i,L,W,H:it.H})}}
+ if(!cs.length)return null;
+ cs.sort((a,b)=>(a.s.y-b.s.y)||(a.s.x-b.s.x)||(a.s.z-b.s.z)||((a.s.L*a.s.W*a.s.H-a.L*a.W*a.H)-(b.s.L*b.s.W*b.s.H-b.L*b.W*b.H)));
+ let c=cs[0];return{x:c.s.x,y:c.s.y,z:c.s.z,L:c.L,W:c.W,H:c.H};
+}
+function split(spaces,u){
+ let out=[];for(const s of spaces){if(!hit(s,u)){out.push(s);continue}
+ if(s.L>u.L)out.push({x:u.x+u.L,y:s.y,z:s.z,L:s.L-u.L,W:s.W,H:s.H});
+ if(s.W>u.W)out.push({x:s.x,y:s.y,z:u.z+u.W,L:s.L,W:s.W-u.W,H:s.H});
+ if(document.getElementById('stack').checked&&s.H>u.H)out.push({x:u.x,y:u.y+u.H,z:u.z,L:u.L,W:u.W,H:s.H-u.H});
+ }return out.filter((a,i,A)=>!A.some((b,j)=>i!==j&&contains(b,a)));
+}
+function hit(a,b){return !(a.x+a.L<=b.x||b.x+b.L<=a.x||a.y+a.H<=b.y||b.y+b.H<=a.y||a.z+a.W<=b.z||b.z+b.W<=a.z)}
+function contains(a,b){return b.x>=a.x&&b.y>=a.y&&b.z>=a.z&&b.x+b.L<=a.x+a.L&&b.y+b.H<=a.y+a.H&&b.z+b.W<=a.z+a.W}
+function makeBox(it,p){
+ let g=new THREE.BoxGeometry(p.L,p.H,p.W),m=new THREE.MeshLambertMaterial({color:it.color});let q=new THREE.Mesh(g,m);q.position.set(p.x+p.L/2,p.y+p.H/2,p.z+p.W/2);q.userData=p;
+ q.add(new THREE.LineSegments(new THREE.EdgesGeometry(g),new THREE.LineBasicMaterial({color:0x111827})));
+ let s=textSprite(it.name+' #'+it.n);s.position.y=p.H/2+3;s.scale.set(80,20,1);q.add(s);return q;
+}
+function textSprite(str){let c=document.createElement('canvas');c.width=512;c.height=128;let x=c.getContext('2d');x.fillStyle='#000b';x.fillRect(0,0,512,128);x.fillStyle='white';x.font='bold 30px Arial';x.textAlign='center';x.textBaseline='middle';x.fillText(str,256,64);return new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(c),transparent:true}))}
+function pick(e){
+ let r=renderer.domElement.getBoundingClientRect(),mouse=new THREE.Vector2((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1),ray=new THREE.Raycaster();ray.setFromCamera(mouse,camera);
+ let hits=ray.intersectObjects(cargo.children);
+ if(hits.length){
+   selected=hits[0].object.userData;
+   placed.forEach(p=>{if(p.mesh){p.mesh.material.emissive=new THREE.Color(0x000000)}});
+   hits[0].object.material.emissive=new THREE.Color(0x334155);
+   updateSelectedInfo();
+ }
+}
+function cameraTop(){camera.position.set(truck.L/2,Math.max(truck.L,truck.W)*1.35,truck.W/2);controls.target.set(truck.L/2,0,truck.W/2)}
+function cameraFront(){camera.position.set(truck.L/2,truck.H*.6,truck.W*2.7);controls.target.set(truck.L/2,truck.H/2,truck.W/2)}
+function cameraSide(){camera.position.set(truck.L*1.4,truck.H*.7,truck.W/2);controls.target.set(truck.L/2,truck.H/2,truck.W/2)}
+function camera3D(){camera.position.set(truck.L*1.15,truck.H*1.45,truck.W*1.7);controls.target.set(truck.L/2,truck.H/2,truck.W/2)}
+
+function axleLoads(totalMass,cgx){
+ const frontX=+t('axFront'), rearX=+t('axRear');
+ const frontMax=+t('axFrontMax'), rearMax=+t('axRearMax');
+ let front=0,rear=0;
+ if(totalMass>0 && rearX!==frontX){
+   front=totalMass*(rearX-cgx)/(rearX-frontX);
+   rear=totalMass-front;
+ }
+ const f=document.getElementById('frontAx'), r=document.getElementById('rearAx');
+ f.textContent=front.toFixed(0)+' / '+frontMax+' kg';
+ r.textContent=rear.toFixed(0)+' / '+rearMax+' kg';
+ const bad=front<0||rear<0||front>frontMax||rear>rearMax;
+ f.style.color=front>frontMax||front<0?'#f87171':'#86efac';
+ r.style.color=rear>rearMax||rear<0?'#f87171':'#86efac';
+ return {front,rear,frontMax,rearMax,bad};
+}
+function updateSelectedInfo(){
+ const el=document.getElementById('selectedInfo');
+ if(!selected){el.textContent='Vyber kus nákladu klepnutím v 3D.';return}
+ el.textContent=`Vybráno: ${selected.name} #${selected.n} • X ${selected.x.toFixed(0)} cm • ${selected.weight} kg`;
+}
+function moveSelected(delta){
+ if(!selected)return;
+ const old=selected.x;
+ const nx=Math.max(0,Math.min(truck.L-selected.L,old+delta));
+ if(nx===old)return;
+ const candidate={x:nx,y:selected.y,z:selected.z,L:selected.L,W:selected.W,H:selected.H};
+ const collision=placed.some(p=>p!==selected && hit(candidate,p));
+ if(collision){message('⚠ Na této pozici je jiný náklad.',false);return}
+ selected.x=nx;
+ selected.mesh.position.x=selected.x+selected.L/2;
+ let totalMass=0,cgx=0,cgy=0;
+ placed.forEach(p=>{totalMass+=p.weight;cgx+=(p.x+p.L/2)*p.weight;cgy+=(p.z+p.W/2)*p.weight});
+ if(totalMass){cgx/=totalMass;cgy/=totalMass}
+ document.getElementById('cgx').textContent=cgx.toFixed(0)+' cm';
+ document.getElementById('cgy').textContent=cgy.toFixed(0)+' cm';
+ const ax=axleLoads(totalMass,cgx);
+ if(ax.bad) message('⚠ Pozor: vypočtené nápravové zatížení překračuje nastavený limit.',false);
+ updateSelectedInfo();
+}
+function exportJSON(){let data={version:'1.0',created:new Date().toISOString(),truck,items:placed.map(p=>({name:p.name,piece:p.n,x:p.x,y:p.y,z:p.z,L:p.L,W:p.W,H:p.H,weight:p.weight}))};download('cargo-plan.json',JSON.stringify(data,null,2),'application/json')}
+function saveLocal(){localStorage.setItem('cargoPlannerPro',JSON.stringify({truck,types}));message('✓ Plán uložen do tohoto zařízení.',true)}
+function printReport(){let rows=placed.map((p,i)=>`<tr><td>${i+1}</td><td>${esc(p.name)} #${p.n}</td><td>${p.x}</td><td>${p.y}</td><td>${p.z}</td><td>${p.L}×${p.W}×${p.H}</td><td>${p.weight}</td></tr>`).join('');let w=window.open('','_blank');w.document.write(`<html><head><title>Cargo Planner - Report</title><style>body{font-family:Arial;padding:30px}table{border-collapse:collapse;width:100%}th,td{border:1px solid #bbb;padding:6px}th{background:#eee}
+#selectedInfo{padding:7px 0;font-weight:700}
+@media(max-width:850px){.actions{grid-template-columns:1fr 1fr}.actions .wide{grid-column:1/-1}}
+</style></head><body><h1>Cargo Planner PRO – plán nakládky</h1><p>Prostor: ${truck.L} × ${truck.W} × ${truck.H} cm</p><p>Naloženo: ${placed.length} ks</p><table><tr><th>#</th><th>Náklad</th><th>X</th><th>Y</th><th>Z</th><th>Rozměr</th><th>kg</th></tr>${rows}</table></body></html>`);w.document.close();w.print()}
+function download(name,data,type){let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([data],{type}));a.download=name;a.click()}
+function message(s,ok){let m=document.getElementById('msg');m.textContent=s;m.className=ok?'ok':'bad'}
+function fmt(n){return new Intl.NumberFormat('cs-CZ').format(n)}
+function esc(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
+init();
+</script>
+</body>
+</html>
